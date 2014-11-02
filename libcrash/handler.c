@@ -122,13 +122,13 @@ static void crash_catcher(int signum, siginfo_t *siginfo, void *UNUSED(context))
     }
 }
 
-void cc_install_handler(const char *logfile)
+static void install_handlers(const char *logfile)
 {
     struct sigaction sa;
     stack_t altss;
 
-    if(logfile)
-        strcpy(log_name, logfile);
+    if(!logfile) logfile = "";
+    snprintf(log_name, sizeof(log_name), "%s", logfile);
 
     /* Set an alternate signal stack so SIGSEGVs caused by stack overflows
      * still run */
@@ -149,8 +149,14 @@ void cc_install_handler(const char *logfile)
     sigaction(SIGABRT, &sa, NULL);
 }
 
+void cc_set_logfile(const char *logfile)
+{
+    if(!logfile) logfile = "";
+    snprintf(log_name, sizeof(log_name), "%s", logfile);
+}
+
 static __attribute__((constructor)) void _installer_constructor()
 {
     printf("Installing crash handlers...\n");
-    cc_install_handler("/tmp/libcrash-log.txt");
+    install_handlers("/tmp/libcrash-log.txt");
 }

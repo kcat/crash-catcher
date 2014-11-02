@@ -229,7 +229,7 @@ static void crash_handler(const char *logfile)
         fprintf(stderr, "Address: %p\n", crash_info.siginfo.si_addr);
     fputc('\n', stderr);
 
-    if(logfile)
+    if(logfile && *logfile)
     {
         /* Create crash log file and redirect shell output to it */
         if(freopen(logfile, "wa", stdout) != stdout)
