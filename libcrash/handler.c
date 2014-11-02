@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,7 +31,7 @@ static const char exec_err[] = "!!! Failed to exec debug process\n";
 
 static char altstack[SIGSTKSZ];
 
-static char crashcatch_exec[PATH_MAX] = "crashcatch";
+static char crashcatch_exec[PATH_MAX] = CRASHCATCH_NAME;
 static char log_name[PATH_MAX];
 
 struct crash_info crash_info;
