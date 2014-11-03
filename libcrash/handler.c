@@ -34,7 +34,7 @@ static const char exec_err[] = "!!! Failed to exec debug process\n";
 static char altstack[SIGSTKSZ];
 
 static char exec_name[PATH_MAX] = CRASHCATCHER_NAME;
-static char log_name[PATH_MAX] = "/tmp/libcrash-log.txt";
+static char log_name[PATH_MAX];
 
 static struct sigaction old_sigsegv_action;
 static struct sigaction old_sigill_action;
@@ -156,6 +156,7 @@ static void install_handlers(void)
 
 static __attribute__((constructor)) void _installer_constructor()
 {
+    snprintf(log_name, sizeof(log_name), "/tmp/libcrash-%d.log", getpid());
     install_handlers();
 }
 
