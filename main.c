@@ -17,6 +17,7 @@
 #endif
 
 #include "main.h"
+#include "crashcatcher.h"
 
 
 static const struct {
@@ -285,6 +286,8 @@ static void crash_handler(const char *logfile)
 
 int main(int argc, char **argv)
 {
+    cc_disable();
+
     if(argc < 2 || argc > 3)
     {
         fprintf(stderr, "Invalid number of parameters: %d\n", argc);

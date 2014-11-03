@@ -14,11 +14,12 @@ configure_file("${crashcatcher_SOURCE_DIR}/config.h.cmake"
 
 add_definitions("-Wall -Wextra")
 
-add_executable(${CRASHCATCHER_NAME} main.c)
-
 add_library(crash SHARED libcrash/handler.c)
 set_target_properties(crash PROPERTIES VERSION 0.0.1
                                        SOVERSION 0)
+
+add_executable(${CRASHCATCHER_NAME} main.c)
+target_link_libraries(${CRASHCATCHER_NAME} crash)
 
 install(TARGETS ${CRASHCATCHER_NAME} crash
         RUNTIME DESTINATION bin

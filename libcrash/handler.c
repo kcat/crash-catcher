@@ -103,7 +103,6 @@ static void crash_catcher(int signum, siginfo_t *siginfo, void *UNUSED(context))
             close(fd[0]);
             close(fd[1]);
 
-            unsetenv("LD_PRELOAD");
             execlp(exec_name, exec_name, CRASH_SWITCH, log_name, NULL);
 
             safe_write(STDERR_FILENO, exec_err, sizeof(exec_err)-1);
