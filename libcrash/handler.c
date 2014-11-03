@@ -33,8 +33,14 @@ static const char exec_err[] = "!!! Failed to exec debug process\n";
 
 static char altstack[SIGSTKSZ];
 
-static char crashcatch_exec[PATH_MAX] = CRASHCATCH_NAME;
+static char exec_name[PATH_MAX] = CRASHCATCH_NAME;
 static char log_name[PATH_MAX];
+
+static struct sigaction old_sigsegv_action;
+static struct sigaction old_sigill_action;
+static struct sigaction old_sigfpe_action;
+static struct sigaction old_sigbus_action;
+static struct sigaction old_sigabrt_action;
 
 struct crash_info crash_info;
 
@@ -97,7 +103,7 @@ static void crash_catcher(int signum, siginfo_t *siginfo, void *UNUSED(context))
             close(fd[1]);
 
             unsetenv("LD_PRELOAD");
-            execlp(crashcatch_exec, crashcatch_exec, CRASH_SWITCH, log_name, NULL);
+            execlp(exec_name, exec_name, CRASH_SWITCH, log_name, NULL);
 
             safe_write(STDERR_FILENO, exec_err, sizeof(exec_err)-1);
             _exit(1);
@@ -144,11 +150,17 @@ static void install_handlers(const char *logfile)
     sa.sa_flags = SA_RESETHAND | SA_NODEFER | SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
 
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGILL, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGBUS, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGSEGV, &sa, &old_sigsegv_action);
+    sigaction(SIGILL, &sa, &old_sigill_action);
+    sigaction(SIGFPE, &sa, &old_sigfpe_action);
+    sigaction(SIGBUS, &sa, &old_sigbus_action);
+    sigaction(SIGABRT, &sa, &old_sigabrt_action);
+}
+
+static __attribute__((constructor)) void _installer_constructor()
+{
+    printf("Installing crash handlers...\n");
+    install_handlers("/tmp/libcrash-log.txt");
 }
 
 void cc_set_logfile(const char *logfile)
@@ -157,8 +169,17 @@ void cc_set_logfile(const char *logfile)
     snprintf(log_name, sizeof(log_name), "%s", logfile);
 }
 
-static __attribute__((constructor)) void _installer_constructor()
+void cc_set_executable(const char *execfile)
 {
-    printf("Installing crash handlers...\n");
-    install_handlers("/tmp/libcrash-log.txt");
+    if(!execfile) execfile = CRASHCATCH_NAME;
+    snprintf(exec_name, sizeof(exec_name), "%s", execfile);
+}
+
+void cc_disable(void)
+{
+    sigaction(SIGSEGV, &old_sigsegv_action, NULL);
+    sigaction(SIGILL, &old_sigill_action, NULL);
+    sigaction(SIGFPE, &old_sigfpe_action, NULL);
+    sigaction(SIGBUS, &old_sigbus_action, NULL);
+    sigaction(SIGABRT, &old_sigabrt_action, NULL);
 }
