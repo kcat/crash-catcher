@@ -165,6 +165,12 @@ static void crash_handler(const char *logfile)
         exit(1);
     }
 
+    if(crash_info.version != CRASH_INFO_VERSION)
+    {
+        fprintf(stderr, "!!! Incompatible crash_info structure (library mismatch)\n");
+        exit(1);
+    }
+
     /* Get the signal description */
     for(i = 0;signals[i].name;++i)
     {

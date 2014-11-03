@@ -4,7 +4,11 @@
 #include <sys/types.h>
 #include <signal.h>
 
+/* Increment this if the crash_info struct changes. */
+#define CRASH_INFO_VERSION 0
+
 struct crash_info {
+    int version;
     int signum;
     pid_t pid;
     int has_siginfo;

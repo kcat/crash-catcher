@@ -82,6 +82,7 @@ static void crash_catcher(int signum, siginfo_t *siginfo, void *UNUSED(context))
         return;
     }
 
+    crash_info.version = CRASH_INFO_VERSION;
     crash_info.signum = signum;
     crash_info.pid = getpid();
     crash_info.has_siginfo = !!siginfo;
