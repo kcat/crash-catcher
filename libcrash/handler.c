@@ -21,6 +21,8 @@
 
 #include "main.h"
 
+#include "crashcatcher.h"
+
 
 #define UNUSED(x) UNUSED_##x __attribute__((unused))
 
