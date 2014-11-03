@@ -157,7 +157,6 @@ static void install_handlers(void)
 
 static __attribute__((constructor)) void _installer_constructor()
 {
-    printf("Installing crash handlers...\n");
     install_handlers();
 }
 
