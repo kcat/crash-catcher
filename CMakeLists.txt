@@ -4,9 +4,9 @@ project(crashcatch C)
 include_directories("${crashcatch_SOURCE_DIR}/include" "${crashcatch_BINARY_DIR}")
 
 if(CMAKE_SIZEOF_VOID_P MATCHES "8")
-    set(CRASHCATCH_NAME crashcatcher64)
+    set(CRASHCATCHER_NAME crashcatcher64)
 else(CMAKE_SIZEOF_VOID_P MATCHES "8")
-    set(CRASHCATCH_NAME crashcatcher32)
+    set(CRASHCATCHER_NAME crashcatcher32)
 endif(CMAKE_SIZEOF_VOID_P MATCHES "8")
 
 configure_file("${crashcatch_SOURCE_DIR}/config.h.cmake"
@@ -14,7 +14,7 @@ configure_file("${crashcatch_SOURCE_DIR}/config.h.cmake"
 
 add_definitions("-Wall -Wextra")
 
-add_executable(${CRASHCATCH_NAME} main.c)
+add_executable(${CRASHCATCHER_NAME} main.c)
 
 add_library(crash SHARED libcrash/handler.c)
 set_target_properties(crash PROPERTIES VERSION 0.0.1

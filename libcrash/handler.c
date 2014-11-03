@@ -33,7 +33,7 @@ static const char exec_err[] = "!!! Failed to exec debug process\n";
 
 static char altstack[SIGSTKSZ];
 
-static char exec_name[PATH_MAX] = CRASHCATCH_NAME;
+static char exec_name[PATH_MAX] = CRASHCATCHER_NAME;
 static char log_name[PATH_MAX] = "/tmp/libcrash-log.txt";
 
 static struct sigaction old_sigsegv_action;
@@ -168,7 +168,7 @@ void cc_set_logfile(const char *logfile)
 
 void cc_set_executable(const char *execfile)
 {
-    if(!execfile) execfile = CRASHCATCH_NAME;
+    if(!execfile) execfile = CRASHCATCHER_NAME;
     snprintf(exec_name, sizeof(exec_name), "%s", execfile);
 }
 
