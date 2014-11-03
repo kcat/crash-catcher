@@ -38,8 +38,8 @@ static const struct {
     const char *name;
 } sigsegv_codes[] = {
 #ifndef __FreeBSD__
-    { SEGV_MAPERR, "Address not mapped to object" },
-    { SEGV_ACCERR, "Invalid permissions for mapped object" },
+    { SEGV_MAPERR, "address not mapped to object" },
+    { SEGV_ACCERR, "invalid permissions for mapped object" },
 #endif
     { 0, NULL }
 };
@@ -49,14 +49,14 @@ static const struct {
     const char *name;
 } sigill_codes[] = {
 #ifndef __FreeBSD__
-    { ILL_ILLOPC, "Illegal opcode" },
-    { ILL_ILLOPN, "Illegal operand" },
-    { ILL_ILLADR, "Illegal addressing mode" },
-    { ILL_ILLTRP, "Illegal trap" },
-    { ILL_PRVOPC, "Privileged opcode" },
-    { ILL_PRVREG, "Privileged register" },
-    { ILL_COPROC, "Coprocessor error" },
-    { ILL_BADSTK, "Internal stack error" },
+    { ILL_ILLOPC, "illegal opcode" },
+    { ILL_ILLOPN, "illegal operand" },
+    { ILL_ILLADR, "illegal addressing mode" },
+    { ILL_ILLTRP, "illegal trap" },
+    { ILL_PRVOPC, "privileged opcode" },
+    { ILL_PRVREG, "privileged register" },
+    { ILL_COPROC, "coprocessor error" },
+    { ILL_BADSTK, "internal stack error" },
 #endif
     { 0, NULL }
 };
@@ -65,14 +65,14 @@ static const struct {
     int code;
     const char *name;
 } sigfpe_codes[] = {
-    { FPE_INTDIV, "Integer divide by zero" },
-    { FPE_INTOVF, "Integer overflow" },
-    { FPE_FLTDIV, "Floating point divide by zero" },
-    { FPE_FLTOVF, "Floating point overflow" },
-    { FPE_FLTUND, "Floating point underflow" },
-    { FPE_FLTRES, "Floating point inexact result" },
-    { FPE_FLTINV, "Floating point invalid operation" },
-    { FPE_FLTSUB, "Subscript out of range" },
+    { FPE_INTDIV, "integer divide by zero" },
+    { FPE_INTOVF, "integer overflow" },
+    { FPE_FLTDIV, "floating point divide by zero" },
+    { FPE_FLTOVF, "floating point overflow" },
+    { FPE_FLTUND, "floating point underflow" },
+    { FPE_FLTRES, "floating point inexact result" },
+    { FPE_FLTINV, "floating point invalid operation" },
+    { FPE_FLTSUB, "subscript out of range" },
     { 0, NULL }
 };
 
@@ -81,10 +81,21 @@ static const struct {
     const char *name;
 } sigbus_codes[] = {
 #ifndef __FreeBSD__
-    { BUS_ADRALN, "Invalid address alignment" },
-    { BUS_ADRERR, "Non-existent physical address" },
-    { BUS_OBJERR, "Object specific hardware error" },
+    { BUS_ADRALN, "invalid address alignment" },
+    { BUS_ADRERR, "non-existent physical address" },
+    { BUS_OBJERR, "object specific hardware error" },
 #endif
+    { 0, NULL }
+};
+
+static const struct {
+    int code;
+    const char *name;
+} generic_codes[] = {
+    { SI_USER,   "kill() function" },
+    { SI_KERNEL, "sent by kernel" },
+    { SI_QUEUE,  "sigqueue() function" },
+    { SI_TKILL , "tkill() or tgkill() function" },
     { 0, NULL }
 };
 
@@ -156,7 +167,8 @@ static struct crash_info crash_info;
 
 static void crash_handler(const char *logfile)
 {
-    const char *sigdesc = "";
+    const char *sigdesc = "Unknown signal";
+    const char *codedesc = "unknown code";
     int showlog = 0;
     int i;
 
@@ -165,7 +177,6 @@ static void crash_handler(const char *logfile)
         fprintf(stderr, "!!! Failed to retrieve info from crashed process\n");
         exit(1);
     }
-
     if(crash_info.version != CRASH_INFO_VERSION)
     {
         fprintf(stderr, "!!! Incompatible crash_info structure (library mismatch)\n");
@@ -184,14 +195,25 @@ static void crash_handler(const char *logfile)
 
     if(crash_info.has_siginfo)
     {
-        switch(crash_info.signum)
+        for(i = 0;generic_codes[i].name;++i)
         {
+            if(generic_codes[i].code == crash_info.siginfo.si_code)
+            {
+                codedesc = generic_codes[i].name;
+                break;
+            }
+        }
+
+        if(!generic_codes[i].name)
+        {
+            switch(crash_info.signum)
+            {
             case SIGSEGV:
                 for(i = 0;sigsegv_codes[i].name;++i)
                 {
                     if(sigsegv_codes[i].code == crash_info.siginfo.si_code)
                     {
-                        sigdesc = sigsegv_codes[i].name;
+                        codedesc = sigsegv_codes[i].name;
                         break;
                     }
                 }
@@ -202,7 +224,7 @@ static void crash_handler(const char *logfile)
                 {
                     if(sigfpe_codes[i].code == crash_info.siginfo.si_code)
                     {
-                        sigdesc = sigfpe_codes[i].name;
+                        codedesc = sigfpe_codes[i].name;
                         break;
                     }
                 }
@@ -213,7 +235,7 @@ static void crash_handler(const char *logfile)
                 {
                     if(sigill_codes[i].code == crash_info.siginfo.si_code)
                     {
-                        sigdesc = sigill_codes[i].name;
+                        codedesc = sigill_codes[i].name;
                         break;
                     }
                 }
@@ -224,17 +246,20 @@ static void crash_handler(const char *logfile)
                 {
                     if(sigbus_codes[i].code == crash_info.siginfo.si_code)
                     {
-                        sigdesc = sigbus_codes[i].name;
+                        codedesc = sigbus_codes[i].name;
                         break;
                     }
                 }
                 break;
+            }
         }
+        fprintf(stderr, "%s, %s (signal %i, code %d)\n", sigdesc, codedesc, crash_info.signum, crash_info.siginfo.si_code);
+        if(crash_info.signum != SIGABRT)
+            fprintf(stderr, "Address: %p\n", crash_info.siginfo.si_addr);
+        fputc('\n', stderr);
     }
-    fprintf(stderr, "%s (signal %i)\n", sigdesc, crash_info.signum);
-    if(crash_info.has_siginfo && crash_info.signum != SIGABRT)
-        fprintf(stderr, "Address: %p\n", crash_info.siginfo.si_addr);
-    fputc('\n', stderr);
+    else
+        fprintf(stderr, "%s (signal %i)\n\n", sigdesc, crash_info.signum);
 
     if(logfile && *logfile)
     {
@@ -245,11 +270,16 @@ static void crash_handler(const char *logfile)
         {
             fprintf(stderr, "Generating %s and killing process %d, please wait...\n", logfile, crash_info.pid);
 
-            printf("*** Fatal Error ***\n"
-                   "%s (signal %i)\n", sigdesc, crash_info.signum);
-            if(crash_info.has_siginfo)
-                printf("Address: %p\n", crash_info.siginfo.si_addr);
-            fputc('\n', stdout);
+            puts("*** Fatal Error ***");
+            if(!crash_info.has_siginfo)
+                printf("%s (signal %i)\n\n", sigdesc, crash_info.signum);
+            else
+            {
+                printf("%s, %s (signal %i, code %d)\n", sigdesc, codedesc, crash_info.signum, crash_info.siginfo.si_code);
+                if(crash_info.signum != SIGABRT)
+                    printf("Address: %p\n", crash_info.siginfo.si_addr);
+                fputc('\n', stdout);
+            }
             fflush(stdout);
 
             showlog = 1;
