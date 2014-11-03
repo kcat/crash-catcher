@@ -225,7 +225,7 @@ static void crash_handler(const char *logfile)
         }
     }
     fprintf(stderr, "%s (signal %i)\n", sigdesc, crash_info.signum);
-    if(crash_info.has_siginfo)
+    if(crash_info.has_siginfo && crash_info.signum != SIGABRT)
         fprintf(stderr, "Address: %p\n", crash_info.siginfo.si_addr);
     fputc('\n', stderr);
 
