@@ -34,7 +34,7 @@ static const char exec_err[] = "!!! Failed to exec debug process\n";
 static char altstack[SIGSTKSZ];
 
 static char exec_name[PATH_MAX] = CRASHCATCH_NAME;
-static char log_name[PATH_MAX];
+static char log_name[PATH_MAX] = "/tmp/libcrash-log.txt";
 
 static struct sigaction old_sigsegv_action;
 static struct sigaction old_sigill_action;
@@ -130,13 +130,10 @@ static void crash_catcher(int signum, siginfo_t *siginfo, void *UNUSED(context))
     }
 }
 
-static void install_handlers(const char *logfile)
+static void install_handlers(void)
 {
     struct sigaction sa;
     stack_t altss;
-
-    if(!logfile) logfile = "";
-    snprintf(log_name, sizeof(log_name), "%s", logfile);
 
     /* Set an alternate signal stack so SIGSEGVs caused by stack overflows
      * still run */
@@ -160,7 +157,7 @@ static void install_handlers(const char *logfile)
 static __attribute__((constructor)) void _installer_constructor()
 {
     printf("Installing crash handlers...\n");
-    install_handlers("/tmp/libcrash-log.txt");
+    install_handlers();
 }
 
 void cc_set_logfile(const char *logfile)
