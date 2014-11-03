@@ -1,0 +1,39 @@
+Crash Catcher is a utility library (libcrash) and application (crashcatcher32 /
+crashcatcher64) that handles application crashes in a user- and developer-
+friendly manner for Linux applications.
+
+Normally when an application crashes, the signal causing the crash is printed
+to the terminal (e.g. "Segmentation fault" or "Aborted") and the app is killed.
+For a graphical environment like X11 using KDE/Gnome, or some other desktop
+manager, applications are often run without a visible terminal, which makes it
+appear as though the app unceremoniously quits for no reason. Though even if
+the user ran it from a terminal, the given info is very minimal.
+
+It is possible to do something about this by installing signal handlers to
+watch for problems occuring, and these callbacks then do the work of collecting
+any information available before showing the user an error message. However,
+that's a non-simple solution (signal handlers are very limited in what they can
+safely do), and is unfair to burden every application to handle indivually,
+especially as other systems provide such functionality automatically.
+
+Crash Catcher is designed to lift this burden, to provide a sharable library
+that's as simple to use as possible while still providing useful capabilities.
+It does not require tying your app to a hefty framework like KDE or GTK. All it
+requires is a small library and application, and it will utilitize external
+tools like kdialog, gxmessage, or xmessage (depending on what the user is
+running), to display messages in a manner visually consistent with the rest of
+the system. Beyond that, all an application has to do is link to libcrash, and
+everything Just Works.
+
+Additionally, an application does not have to explicitly link to libcrash.
+Dynamically loading libcrash via dlopen will still work. Also, a user may set
+the LD_PRELOAD environment variable or some other method to force libcrash to
+load into existing applications (presuming said application doesn't set its own
+signal handlers, in which case libcrash will effectively do nothing). This
+means even existing applications can utilize it, so long as libcrash gets
+loaded into them.
+
+It is recommended to have GDB installed so that the crash catcher can attempt
+to analyze the crashed process for potentially relevant information (loaded
+libraries, stack traces, etc), although this is not required for simply
+providing a visual acknowledgement of a crashed application.
