@@ -20,6 +20,9 @@
 #include "crashcatcher.h"
 
 
+#define UNUSED(x) UNUSED_##x __attribute__((unused))
+
+
 static const struct {
     const char *name;
     int signum;
@@ -32,7 +35,6 @@ static const struct {
     { NULL, 0 }
 };
 
-
 static const struct {
     int code;
     const char *name;
@@ -42,12 +44,7 @@ static const struct {
     { SEGV_ACCERR, "invalid permissions for mapped object" },
 #endif
     { 0, NULL }
-};
-
-static const struct {
-    int code;
-    const char *name;
-} sigill_codes[] = {
+}, sigill_codes[] = {
 #ifndef __FreeBSD__
     { ILL_ILLOPC, "illegal opcode" },
     { ILL_ILLOPN, "illegal operand" },
@@ -59,12 +56,7 @@ static const struct {
     { ILL_BADSTK, "internal stack error" },
 #endif
     { 0, NULL }
-};
-
-static const struct {
-    int code;
-    const char *name;
-} sigfpe_codes[] = {
+}, sigfpe_codes[] = {
     { FPE_INTDIV, "integer divide by zero" },
     { FPE_INTOVF, "integer overflow" },
     { FPE_FLTDIV, "floating point divide by zero" },
@@ -74,12 +66,7 @@ static const struct {
     { FPE_FLTINV, "floating point invalid operation" },
     { FPE_FLTSUB, "subscript out of range" },
     { 0, NULL }
-};
-
-static const struct {
-    int code;
-    const char *name;
-} sigbus_codes[] = {
+}, sigbus_codes[] = {
 #ifndef __FreeBSD__
     { BUS_ADRALN, "invalid address alignment" },
     { BUS_ADRERR, "non-existent physical address" },
@@ -98,6 +85,58 @@ static const struct {
     { SI_TKILL , "tkill() or tgkill() function" },
     { 0, NULL }
 };
+
+
+static int show_kde(const struct crash_info *info, const char *sigdesc, const char *logfile)
+{
+    char buf[512] = {'\0'};
+    int ret;
+
+    snprintf(buf, sizeof(buf), "kdialog --title \"%s - process %d\" --yes-label \"Show log...\" --no-label \"Close\" --yesno \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, info->pid, logfile);
+    ret = system(buf);
+    if(ret == -1 || ret == 127)
+        return 0;
+    if(ret == 0)
+    {
+        snprintf(buf, sizeof(buf), "kdialog --title \"%s - crash log\" --textbox \"%s\" 800 600", logfile, logfile);
+        system(buf);
+    }
+    return 1;
+}
+
+static int show_gtk(const struct crash_info *info, const char *sigdesc, const char *logfile)
+{
+    char buf[512] = {'\0'};
+    int ret;
+
+    snprintf(buf, sizeof(buf), "gxmessage -title \"%s - process %d\" -buttons \"Show log...:0,Close:1\" -center \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, info->pid, logfile);
+    ret = system(buf);
+    if(ret == -1 || ret == 127)
+        return 0;
+    if(ret == 0)
+    {
+        snprintf(buf, sizeof(buf), "gxmessage -title \"%s - crash log\" -buttons \"Okay:0\" -font monospace -geometry 800x600 -center -file \"%s\"", logfile, logfile);
+        system(buf);
+    }
+    return 1;
+}
+
+static int show_x11(const struct crash_info *UNUSED(info), const char *UNUSED(sigdesc), const char *logfile)
+{
+    char buf[512] = {'\0'};
+    int ret;
+
+    snprintf(buf, sizeof(buf), "xmessage -buttons \"Show log...:0,Close:1\" -center \"The application has crashed.\n\nA crash log was written to %s\"", logfile);
+    ret = system(buf);
+    if(ret == -1 || ret == 127)
+        return 0;
+    if(ret == 0)
+    {
+        snprintf(buf, sizeof(buf), "xmessage -buttons \"Okay:0\" -center -file \"%s\"", logfile);
+        system(buf);
+    }
+    return 1;
+}
 
 
 static void gdb_info(pid_t pid)
@@ -253,7 +292,7 @@ static void crash_handler(const char *logfile)
                 break;
             }
         }
-        fprintf(stderr, "%s, %s (signal %i, code %d)\n", sigdesc, codedesc, crash_info.signum, crash_info.siginfo.si_code);
+        fprintf(stderr, "%s, %s (signal %i, code 0x%02x)\n", sigdesc, codedesc, crash_info.signum, crash_info.siginfo.si_code);
         if(crash_info.signum != SIGABRT)
             fprintf(stderr, "Address: %p\n", crash_info.siginfo.si_addr);
         fputc('\n', stderr);
@@ -275,7 +314,7 @@ static void crash_handler(const char *logfile)
                 printf("%s (signal %i)\n\n", sigdesc, crash_info.signum);
             else
             {
-                printf("%s, %s (signal %i, code %d)\n", sigdesc, codedesc, crash_info.signum, crash_info.siginfo.si_code);
+                printf("%s, %s (signal %i, code 0x%02x)\n", sigdesc, codedesc, crash_info.signum, crash_info.siginfo.si_code);
                 if(crash_info.signum != SIGABRT)
                     printf("Address: %p\n", crash_info.siginfo.si_addr);
                 fputc('\n', stdout);
@@ -300,26 +339,16 @@ static void crash_handler(const char *logfile)
 
     if(showlog)
     {
-        char buf[512] = {'\0'};
         const char *str;
-        int ret = -1;
+        int ret = 0;
 
         if((str=getenv("KDE_FULL_SESSION")) && strcmp(str, "true") == 0)
-            snprintf(buf, sizeof(buf), "kdialog --title \"%s - process %d\" --yes-label \"Show log...\" --no-label \"Close\" --yesno \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, crash_info.pid, logfile);
-        else if((str=getenv("GNOME_DESKTOP_SESSION_ID")) && str[0] != '\0')
-            snprintf(buf, sizeof(buf), "gxmessage -title \"%s - process %d\" -buttons \"Show log...:0,Close:1\" -center \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, crash_info.pid, logfile);
-        if(buf[0] != '\0')
-            ret = system(buf);
-
-        if(ret == -1 || ret == 127 || ret == 0)
+            ret = show_kde(&crash_info, sigdesc, logfile);
+        if(!ret)
         {
-            if((str=getenv("KDE_FULL_SESSION")) && strcmp(str, "true") == 0)
-                snprintf(buf, sizeof(buf), "kdialog --title \"%s - crash log\" --textbox \"%s\" 800 600", logfile, logfile);
-            else if((str=getenv("GNOME_DESKTOP_SESSION_ID")) && str[0] != '\0')
-                snprintf(buf, sizeof(buf), "gxmessage -title \"%s - crash log\" -buttons \"Okay:0\" -font monospace -geometry 800x600 -center -file \"%s\"", logfile, logfile);
-            else
-                snprintf(buf, sizeof(buf), "xmessage -buttons \"Okay:0\" -center -file \"%s\"", logfile);
-            system(buf);
+            ret = show_gtk(&crash_info, sigdesc, logfile);
+            if(!ret)
+                ret = show_x11(&crash_info, sigdesc, logfile);
         }
     }
 }
