@@ -23,6 +23,6 @@ target_link_libraries(${CRASHCATCHER_NAME} crash)
 
 install(TARGETS ${CRASHCATCHER_NAME} crash
         RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib)
+        LIBRARY DESTINATION lib${LIB_SUFFIX})
 install(FILES include/crashcatcher.h
         DESTINATION include)
