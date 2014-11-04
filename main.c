@@ -149,25 +149,25 @@ static void gdb_info(pid_t pid)
     strcpy(respfile, "/tmp/gdb-respfile-XXXXXX");
     if((fd=mkstemp(respfile)) >= 0 && (f=fdopen(fd, "w")) != NULL)
     {
-        fprintf(f, "attach %d\n"
-                   "shell echo \"\"\n"
-                   "shell echo \"* Loaded Libraries\"\n"
-                   "info sharedlibrary\n"
-                   "shell echo \"\"\n"
-                   "shell echo \"* Threads\"\n"
-                   "info threads\n"
-                   "shell echo \"\"\n"
-                   "shell echo \"* FPU Status\"\n"
-                   "info float\n"
-                   "shell echo \"\"\n"
-                   "shell echo \"* Registers\"\n"
-                   "info registers\n"
-                   "shell echo \"\"\n"
-                   "shell echo \"* Backtrace\"\n"
-                   "thread apply all backtrace full\n"
-                   "detach\n"
-                   "quit\n", pid);
-        fclose(f);
+        fprintf(f, "attach %d\n", pid);
+        fputs("shell echo \"\"\n"
+              "shell echo \"* Loaded Libraries\"\n"
+              "info sharedlibrary\n"
+              "shell echo \"\"\n"
+              "shell echo \"* Threads\"\n"
+              "info threads\n"
+              "shell echo \"\"\n"
+              "shell echo \"* FPU Status\"\n"
+              "info float\n"
+              "shell echo \"\"\n"
+              "shell echo \"* Registers\"\n"
+              "info registers\n"
+              "shell echo \"\"\n"
+              "shell echo \"* Backtrace\"\n"
+              "thread apply all backtrace full\n"
+              "detach\n"
+              "quit\n", f);
+        fflush(f);
 
         /* Run gdb and print process info. */
         snprintf(cmd_buf, sizeof(cmd_buf), "gdb --quiet --batch --command=%s", respfile);
@@ -176,6 +176,7 @@ static void gdb_info(pid_t pid)
 
         system(cmd_buf);
         /* Clean up */
+        fclose(f);
         remove(respfile);
     }
     else
@@ -186,7 +187,7 @@ static void gdb_info(pid_t pid)
             close(fd);
             remove(respfile);
         }
-        printf("!!! Could not create gdb command file\n");
+        puts("!!! Could not create gdb command file");
     }
     fflush(stdout);
 }
@@ -212,12 +213,12 @@ static void crash_handler(const char *logfile)
 
     if(fread(&crash_info, sizeof(crash_info), 1, stdin) != 1)
     {
-        fprintf(stderr, "!!! Failed to retrieve info from crashed process\n");
+        fputs("!!! Failed to retrieve info from crashed process\n", stderr);
         exit(1);
     }
     if(crash_info.version != CRASH_INFO_VERSION)
     {
-        fprintf(stderr, "!!! Incompatible crash_info structure (library mismatch)\n");
+        fputs("!!! Incompatible crash_info structure (library mismatch)\n", stderr);
         exit(1);
     }
 
@@ -316,7 +317,7 @@ static void crash_handler(const char *logfile)
                 printf("%s, %s (signal %i, code 0x%02x)\n", sigdesc, codedesc, crash_info.signum, crash_info.siginfo.si_code);
                 if(crash_info.signum != SIGABRT)
                     printf("Address: %p\n", crash_info.siginfo.si_addr);
-                fputc('\n', stdout);
+                putchar('\n');
             }
             fflush(stdout);
 
@@ -326,9 +327,12 @@ static void crash_handler(const char *logfile)
 
     sys_info();
 
-    crash_info.buf[sizeof(crash_info.buf)-1] = '\0';
-    printf("%s\n", crash_info.buf);
-    fflush(stdout);
+    if(crash_info.buf[0] != '\0')
+    {
+        crash_info.buf[sizeof(crash_info.buf)-1] = '\0';
+        puts(crash_info.buf);
+        fflush(stdout);
+    }
 
     if(crash_info.pid > 0)
     {
