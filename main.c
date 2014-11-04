@@ -300,17 +300,27 @@ static void crash_handler(const char *logfile)
 
     if(showlog)
     {
+        char buf[512] = {'\0'};
         const char *str;
-        char buf[512];
+        int ret = -1;
 
         if((str=getenv("KDE_FULL_SESSION")) && strcmp(str, "true") == 0)
-            snprintf(buf, sizeof(buf), "kdialog --title \"Fatal Error\" --textbox \"%s\" 800 600", logfile);
+            snprintf(buf, sizeof(buf), "kdialog --title \"%s - process %d\" --yes-label \"Show log...\" --no-label \"Close\" --yesno \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, crash_info.pid, logfile);
         else if((str=getenv("GNOME_DESKTOP_SESSION_ID")) && str[0] != '\0')
-            snprintf(buf, sizeof(buf), "gxmessage -buttons \"Okay:0\" -geometry 800x600 -title \"Fatal Error\" -center -file \"%s\"", logfile);
-        else
-            snprintf(buf, sizeof(buf), "xmessage -buttons \"Okay:0\" -center -file \"%s\"", logfile);
+            snprintf(buf, sizeof(buf), "gxmessage -title \"%s - process %d\" -buttons \"Show log...:0,Close:1\" -center \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, crash_info.pid, logfile);
+        if(buf[0] != '\0')
+            ret = system(buf);
 
-        system(buf);
+        if(ret == -1 || ret == 127 || ret == 0)
+        {
+            if((str=getenv("KDE_FULL_SESSION")) && strcmp(str, "true") == 0)
+                snprintf(buf, sizeof(buf), "kdialog --title \"%s - crash log\" --textbox \"%s\" 800 600", logfile, logfile);
+            else if((str=getenv("GNOME_DESKTOP_SESSION_ID")) && str[0] != '\0')
+                snprintf(buf, sizeof(buf), "gxmessage -title \"%s - crash log\" -buttons \"Okay:0\" -font monospace -geometry 800x600 -center -file \"%s\"", logfile, logfile);
+            else
+                snprintf(buf, sizeof(buf), "xmessage -buttons \"Okay:0\" -center -file \"%s\"", logfile);
+            system(buf);
+        }
     }
 }
 
