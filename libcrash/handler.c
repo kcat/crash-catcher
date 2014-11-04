@@ -103,7 +103,7 @@ static void crash_catcher(int signum, siginfo_t *siginfo, void *UNUSED(context))
             close(fd[0]);
             close(fd[1]);
 
-            execlp(exec_name, exec_name, CRASH_SWITCH, log_name, NULL);
+            execl(exec_name, exec_name, CRASH_SWITCH, log_name, NULL);
 
             safe_write(STDERR_FILENO, exec_err, sizeof(exec_err)-1);
             _exit(1);
@@ -156,6 +156,34 @@ static void install_handlers(void)
 
 static __attribute__((constructor)) void _installer_constructor()
 {
+    const char *paths = getenv("PATH");
+    while(paths && *paths)
+    {
+        const char *next = strchr(paths, ':');
+        size_t len = (next ? (size_t)(next-paths) : strlen(paths));
+        char cmd[PATH_MAX] = {};
+
+        if(len < sizeof(cmd))
+        {
+            struct stat sb;
+
+            memcpy(cmd, paths, len);
+            snprintf(cmd+len, sizeof(cmd)-len, "/%s", CRASHCATCHER_NAME);
+
+            if(stat(cmd, &sb) == 0)
+            {
+                if(S_ISREG(sb.st_mode))
+                {
+                    strncpy(exec_name, cmd, sizeof(exec_name));
+                    exec_name[sizeof(exec_name)-1] = '\0';
+                    break;
+                }
+            }
+        }
+
+        if(next) next++;
+        paths = next;
+    }
     snprintf(log_name, sizeof(log_name), "/tmp/libcrash-%d.log", getpid());
     install_handlers();
 }
