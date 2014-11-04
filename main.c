@@ -358,21 +358,13 @@ static void crash_handler(const char *logfile)
 
 int main(int argc, char **argv)
 {
-    cc_disable();
-
-    if(argc < 2 || argc > 3)
+    if(argc == 3 && strcmp(argv[1], CRASH_SWITCH) == 0)
     {
-        fprintf(stderr, "Invalid number of parameters: %d\n", argc);
-        fprintf(stderr, "Usage: %s %s [logfile]\n", argv[0], CRASH_SWITCH);
-        exit(1);
-    }
-    if(strcmp(argv[1], CRASH_SWITCH) != 0)
-    {
-        fprintf(stderr, "Invalid parameter: %s\n", argv[1]);
-        fprintf(stderr, "Usage: %s %s [logfile]\n", argv[0], CRASH_SWITCH);
-        exit(1);
+        cc_disable();
+        crash_handler(argv[2]);
+        exit(0);
     }
 
-    crash_handler((argc==3) ? argv[2] : NULL);
-    return 0;
+    fprintf(stderr, "%s: Do not run directly, will be run by crashing applications.\n", argv[0]);
+    return 1;
 }
