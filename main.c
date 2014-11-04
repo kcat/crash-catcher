@@ -22,7 +22,6 @@
 
 #define UNUSED(x) UNUSED_##x __attribute__((unused))
 
-
 static const struct {
     const char *name;
     int signum;
@@ -147,7 +146,7 @@ static void gdb_info(pid_t pid)
     int fd;
 
     /* Create a temp file to put gdb commands into */
-    strcpy(respfile, "gdb-respfile-XXXXXX");
+    strcpy(respfile, "/tmp/gdb-respfile-XXXXXX");
     if((fd=mkstemp(respfile)) >= 0 && (f=fdopen(fd, "w")) != NULL)
     {
         fprintf(f, "attach %d\n"
