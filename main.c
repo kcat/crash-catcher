@@ -93,7 +93,7 @@ static int show_kde(const struct crash_info *info, const char *sigdesc, const ch
 
     snprintf(buf, sizeof(buf), "kdialog --title \"%s - process %d\" --yes-label \"Show log...\" --no-label \"Close\" --yesno \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, info->pid, logfile);
     ret = system(buf);
-    if(ret == -1 || ret == 127)
+    if(ret != 0 && ret != 1)
         return 0;
     if(ret == 0)
     {
@@ -110,7 +110,7 @@ static int show_gtk(const struct crash_info *info, const char *sigdesc, const ch
 
     snprintf(buf, sizeof(buf), "gxmessage -title \"%s - process %d\" -buttons \"Show log...:0,Close:1\" -center \"The application has crashed.\n\nA crash log was written to %s\"", sigdesc, info->pid, logfile);
     ret = system(buf);
-    if(ret == -1 || ret == 127)
+    if(ret != 0 && ret != 1)
         return 0;
     if(ret == 0)
     {
@@ -127,7 +127,7 @@ static int show_x11(const struct crash_info *UNUSED(info), const char *UNUSED(si
 
     snprintf(buf, sizeof(buf), "xmessage -buttons \"Show log...:0,Close:1\" -center \"The application has crashed.\n\nA crash log was written to %s\"", logfile);
     ret = system(buf);
-    if(ret == -1 || ret == 127)
+    if(ret != 0 && ret != 1)
         return 0;
     if(ret == 0)
     {
